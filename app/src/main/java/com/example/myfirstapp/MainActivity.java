@@ -1,14 +1,17 @@
+
 package com.example.myfirstapp;
 
 import android.Manifest;
 import android.app.Activity;
 import android.content.pm.PackageManager;
-import android.os.Bundle;
 import android.graphics.Color;
+import android.net.Uri;
+import android.os.Bundle;
 import android.view.Gravity;
 import android.view.ViewGroup;
 import android.webkit.GeolocationPermissions;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -21,8 +24,12 @@ public class MainActivity extends Activity {
     private WebView webView;
 
     private static final int LOCATION_REQUEST = 101;
+
     private static final String WEBSITE_URL =
             "https://beautiful-liger-ce28f9.netlify.app/";
+
+    private static final String TRUSTED_HOST =
+            "beautiful-liger-ce28f9.netlify.app";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +41,7 @@ public class MainActivity extends Activity {
         return checkSelfPermission(
                 Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED
-            || checkSelfPermission(
+                || checkSelfPermission(
                 Manifest.permission.ACCESS_COARSE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED;
     }
@@ -52,12 +59,13 @@ public class MainActivity extends Activity {
         title.setTextColor(Color.BLACK);
         title.setGravity(Gravity.CENTER);
 
-        LinearLayout.LayoutParams params =
+        LinearLayout.LayoutParams titleParams =
                 new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-        params.bottomMargin = 32;
-        layout.addView(title, params);
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT);
+
+        titleParams.bottomMargin = 32;
+        layout.addView(title, titleParams);
 
         Button button = new Button(this);
         button.setText("Current Location");
@@ -68,11 +76,11 @@ public class MainActivity extends Activity {
                 openWebsite();
             } else {
                 requestPermissions(
-                    new String[] {
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION
-                    },
-                    LOCATION_REQUEST
+                        new String[]{
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                        },
+                        LOCATION_REQUEST
                 );
             }
         });
@@ -81,28 +89,39 @@ public class MainActivity extends Activity {
     }
 
     private void openWebsite() {
+        if (webView != null) {
+            webView.destroy();
+        }
+
         webView = new WebView(this);
 
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-        webView.getSettings().setGeolocationEnabled(true);
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setGeolocationEnabled(true);
 
         webView.setWebViewClient(new WebViewClient());
 
         webView.setWebChromeClient(new WebChromeClient() {
+
             @Override
             public void onGeolocationPermissionsShowPrompt(
                     String origin,
                     GeolocationPermissions.Callback callback) {
 
-                boolean trusted =
-                    "https://beautiful-liger-ce28f9.netlify.app"
-                    .equals(origin);
+                Uri uri = Uri.parse(origin);
+
+                boolean trustedWebsite =
+                        "https".equalsIgnoreCase(uri.getScheme())
+                        && TRUSTED_HOST.equalsIgnoreCase(uri.getHost());
+
+                boolean permissionGranted =
+                        hasLocationPermission();
 
                 callback.invoke(
-                    origin,
-                    trusted && hasLocationPermission(),
-                    false
+                        origin,
+                        trustedWebsite && permissionGranted,
+                        false
                 );
             }
         });
@@ -118,16 +137,19 @@ public class MainActivity extends Activity {
             int[] grantResults) {
 
         super.onRequestPermissionsResult(
-            requestCode, permissions, grantResults);
+                requestCode,
+                permissions,
+                grantResults
+        );
 
         if (requestCode == LOCATION_REQUEST) {
             if (hasLocationPermission()) {
                 openWebsite();
             } else {
                 Toast.makeText(
-                    this,
-                    "Allow location permission to use this feature.",
-                    Toast.LENGTH_LONG
+                        this,
+                        "Please allow location permission in app settings.",
+                        Toast.LENGTH_LONG
                 ).show();
             }
         }
@@ -152,7 +174,7 @@ public class MainActivity extends Activity {
             webView.destroy();
             webView = null;
         }
+
         super.onDestroy();
     }
 }
-
