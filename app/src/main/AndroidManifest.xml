@@ -3,7 +3,7 @@
 
     <application
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:label="My First App"
+        android:label="Travelkit"
         android:allowBackup="false">
 
         <activity
